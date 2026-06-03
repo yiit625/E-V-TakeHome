@@ -1,5 +1,7 @@
 package com.ev.listing.matcher.scoring;
 
+import com.ev.listing.matcher.configuration.ScoringWeightsConfig;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -7,18 +9,23 @@ import java.math.BigDecimal;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class ScoringEngine {
+    private final ScoringWeightsConfig weights;
 
     public double score(BigDecimal propertyPrice, Integer propertyRooms, Double propertySquareMeters,
                         BigDecimal targetPrice, Integer minRooms, Double minSquareMeters) {
         double priceScore = calculatePriceScore(propertyPrice, targetPrice);
         double roomsScore = calculateRoomsScore(propertyRooms, minRooms);
         double spaceScore = calculateSpaceScore(propertySquareMeters, minSquareMeters);
-        double total = (priceScore + roomsScore + spaceScore) / 3.0;
+        double totalWeight = weights.getPrice() + weights.getRooms() + weights.getSpace();
 
-        log.debug("Score: price={}, rooms={}, space={}, total={}", priceScore, roomsScore, spaceScore, total);
+        log.debug("Score: price={}, rooms={}, space={}, totalWeight={}", priceScore, roomsScore, spaceScore, totalWeight);
 
-        return total;
+        return (priceScore * weights.getPrice()
+              + roomsScore * weights.getRooms()
+              + spaceScore * weights.getSpace())
+              / totalWeight;
     }
 
     private double calculatePriceScore(BigDecimal propertyPrice, BigDecimal targetPrice) {

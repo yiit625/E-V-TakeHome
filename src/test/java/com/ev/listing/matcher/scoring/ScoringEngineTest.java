@@ -1,5 +1,6 @@
 package com.ev.listing.matcher.scoring;
 
+import com.ev.listing.matcher.configuration.ScoringWeightsConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -13,7 +14,11 @@ public class ScoringEngineTest {
 
     @BeforeEach
     void setUp() {
-        scoringEngine = new ScoringEngine();
+        ScoringWeightsConfig weights = new ScoringWeightsConfig();
+        weights.setPrice(1.0);
+        weights.setRooms(1.0);
+        weights.setSpace(1.0);
+        scoringEngine = new ScoringEngine(weights);
     }
 
     @Test

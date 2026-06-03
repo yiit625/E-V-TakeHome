@@ -23,3 +23,9 @@ springdoc:
     path: /swagger-ui.html
     try-it-out-enabled: true
     operations-sorter: method
+
+scoring:
+  weights:
+    price: 1.0
+    rooms: 1.0
+    space: 1.0
