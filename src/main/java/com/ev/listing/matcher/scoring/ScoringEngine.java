@@ -1,8 +1,5 @@
 package com.ev.listing.matcher.scoring;
 
-import com.ev.listing.matcher.dto.SearchRequest;
-import com.ev.listing.matcher.dto.SearchResultItem;
-import com.ev.listing.matcher.entities.PropertyListingEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -11,24 +8,17 @@ import java.math.BigDecimal;
 @Slf4j
 @Component
 public class ScoringEngine {
-    public SearchResultItem score(PropertyListingEntity listing, SearchRequest request) {
-        double priceScore = calculatePriceScore(listing.getPrice(), request.getTargetPrice());
-        double roomsScore = calculateRoomsScore(listing.getNumberOfRooms(), request.getMinRooms());
-        double spaceScore = calculateSpaceScore(listing.getSquareMeters(), request.getMinSquareMeters());
+
+    public double score(BigDecimal propertyPrice, Integer propertyRooms, Double propertySquareMeters,
+                        BigDecimal targetPrice, Integer minRooms, Double minSquareMeters) {
+        double priceScore = calculatePriceScore(propertyPrice, targetPrice);
+        double roomsScore = calculateRoomsScore(propertyRooms, minRooms);
+        double spaceScore = calculateSpaceScore(propertySquareMeters, minSquareMeters);
         double total = (priceScore + roomsScore + spaceScore) / 3.0;
 
-        log.debug("Score for '{}': price={}, rooms={}, space={}, total={}",
-                listing.getTitle(), priceScore, roomsScore, spaceScore, total);
+        log.debug("Score: price={}, rooms={}, space={}, total={}", priceScore, roomsScore, spaceScore, total);
 
-        return new SearchResultItem(
-                listing.getId(),
-                listing.getTitle(),
-                listing.getPrice(),
-                listing.getZipCode(),
-                listing.getNumberOfRooms(),
-                listing.getSquareMeters(),
-                total
-        );
+        return total;
     }
 
     private double calculatePriceScore(BigDecimal propertyPrice, BigDecimal targetPrice) {

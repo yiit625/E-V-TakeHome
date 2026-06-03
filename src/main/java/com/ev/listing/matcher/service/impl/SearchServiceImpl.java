@@ -23,7 +23,17 @@ public class SearchServiceImpl implements SearchService {
     public List<SearchResultItem> searchListings(SearchRequest request) {
         return listingRepository.findAllByStatus(ListingStatus.ACTIVE)
                 .stream()
-                .map(listing -> scoringEngine.score(listing, request))
+                .map(listing -> {
+                    double score = scoringEngine.score(
+                            listing.getPrice(), listing.getNumberOfRooms(), listing.getSquareMeters(),
+                            request.getTargetPrice(), request.getMinRooms(), request.getMinSquareMeters()
+                    );
+                    return new SearchResultItem(
+                            listing.getId(), listing.getTitle(), listing.getPrice(),
+                            listing.getZipCode(), listing.getNumberOfRooms(), listing.getSquareMeters(),
+                            score
+                    );
+                })
                 .sorted((a, b) -> Double.compare(b.getScore(), a.getScore()))
                 .toList();
     }

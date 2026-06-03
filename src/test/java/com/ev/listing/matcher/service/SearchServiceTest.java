@@ -19,7 +19,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,20 +34,24 @@ public class SearchServiceTest {
 
     @Test
     void searchListings_returnsResultsSortedByScoreDescending() {
-        PropertyListingEntity listing1 = buildListing("Penthouse Hamburg", 1_500_000);
-        PropertyListingEntity listing2 = buildListing("Villa Munich", 1_800_000);
-        PropertyListingEntity listing3 = buildListing("Apartment Berlin", 900_000);
+        PropertyListingEntity listing1 = buildListing("Penthouse Hamburg", 1_500_000, 4, 120.0);
+        PropertyListingEntity listing2 = buildListing("Villa Munich", 1_800_000, 5, 200.0);
+        PropertyListingEntity listing3 = buildListing("Apartment Berlin", 900_000, 2, 60.0);
 
         when(listingRepository.findAllByStatus(ListingStatus.ACTIVE))
                 .thenReturn(List.of(listing1, listing2, listing3));
 
-        SearchRequest request = buildRequest();
+        when(scoringEngine.score(
+                eq(listing1.getPrice()), eq(listing1.getNumberOfRooms()), eq(listing1.getSquareMeters()),
+                any(), any(), any())).thenReturn(1.0);
+        when(scoringEngine.score(
+                eq(listing2.getPrice()), eq(listing2.getNumberOfRooms()), eq(listing2.getSquareMeters()),
+                any(), any(), any())).thenReturn(0.6);
+        when(scoringEngine.score(
+                eq(listing3.getPrice()), eq(listing3.getNumberOfRooms()), eq(listing3.getSquareMeters()),
+                any(), any(), any())).thenReturn(0.8);
 
-        when(scoringEngine.score(eq(listing1), any())).thenReturn(buildResult("Penthouse Hamburg", 1.0));
-        when(scoringEngine.score(eq(listing2), any())).thenReturn(buildResult("Villa Munich", 0.6));
-        when(scoringEngine.score(eq(listing3), any())).thenReturn(buildResult("Apartment Berlin", 0.8));
-
-        List<SearchResultItem> results = searchService.searchListings(request);
+        List<SearchResultItem> results = searchService.searchListings(buildRequest());
 
         assertThat(results).hasSize(3);
         assertThat(results.get(0).getTitle()).isEqualTo("Penthouse Hamburg");
@@ -66,7 +69,7 @@ public class SearchServiceTest {
         List<SearchResultItem> results = searchService.searchListings(buildRequest());
 
         assertThat(results).isEmpty();
-        verify(scoringEngine, never()).score(any(), any());
+        verify(scoringEngine, never()).score(any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -79,11 +82,6 @@ public class SearchServiceTest {
         verifyNoMoreInteractions(listingRepository);
     }
 
-    private SearchResultItem buildResult(String title, double score) {
-        return new SearchResultItem(UUID.randomUUID(), title,
-                BigDecimal.valueOf(1_500_000), "20095", 4, 120.0, score);
-    }
-
     private SearchRequest buildRequest() {
         SearchRequest request = new SearchRequest();
         request.setTargetPrice(BigDecimal.valueOf(1_500_000));
@@ -92,11 +90,13 @@ public class SearchServiceTest {
         return request;
     }
 
-    private PropertyListingEntity buildListing(String title, double price) {
+    private PropertyListingEntity buildListing(String title, double price, int rooms, double sqm) {
         PropertyListingEntity listing = new PropertyListingEntity();
         listing.setId(UUID.randomUUID());
         listing.setTitle(title);
         listing.setPrice(BigDecimal.valueOf(price));
+        listing.setNumberOfRooms(rooms);
+        listing.setSquareMeters(sqm);
         listing.setStatus(ListingStatus.ACTIVE);
         return listing;
     }
