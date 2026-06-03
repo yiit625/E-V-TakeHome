@@ -107,6 +107,38 @@ class ListingControllerTest {
         assertThat(responseBody).contains("ZIP code cannot be blank");
     }
 
+    @Test
+    void createListing_blankDescription_returns400() throws Exception {
+        CreateListingRequest request = buildValidRequest();
+        request.setDescription("");
+
+        MvcResult mvcResult = mockMvc.perform(post("/api/listings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+
+        String responseBody = mvcResult.getResponse().getContentAsString();
+        assertThat(responseBody).contains("Description cannot be blank");
+    }
+
+    @Test
+    void createListing_negativeSpaceAndRooms_returns400() throws Exception {
+        CreateListingRequest request = buildValidRequest();
+        request.setSquareMeters(0.0);
+        request.setNumberOfRooms(-1);
+
+        MvcResult mvcResult = mockMvc.perform(post("/api/listings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+
+        String responseBody = mvcResult.getResponse().getContentAsString();
+        assertThat(responseBody).contains("Square meters must be greater than zero");
+        assertThat(responseBody).contains("Number of rooms must be greater than zero");
+    }
+
     private CreateListingRequest buildValidRequest() {
         CreateListingRequest request = new CreateListingRequest();
         request.setTitle("Penthouse Hamburg");
